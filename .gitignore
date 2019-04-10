@@ -1,0 +1,11 @@
+examples/fast_tv_prox
+examples/fast_tv_prox-3d
+examples/inpainting-2d
+examples/mask-2d
+examples/*.o
+
+bindings/python3/build/
+bindings/python3/ftvp.cpp
+bindings/python3/ftvp.so
+
+src/libftvp.so
