@@ -1,11 +1,25 @@
-examples/fast_tv_prox
-examples/fast_tv_prox-3d
-examples/inpainting-2d
-examples/mask-2d
-examples/*.o
+# Byte-compiled / optimized
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
 
-bindings/python3/build/
-bindings/python3/ftvp.cpp
-bindings/python3/ftvp.so
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+.eggs/
 
-src/libftvp.so
+# PyTorch extension build artifacts
+*.o
+*.a
+*.dylib
+
+# Editor
+*~
+.vscode/
+.idea/
+
+# Misc
+.ropeproject/
+cscope.*

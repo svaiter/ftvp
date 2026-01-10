@@ -1,88 +1,68 @@
-Fast Total Variation Proximal
-=============================
+# ftvp - Fast Total Variation Proximal
 
-** EXPERIMENTAL CODE: may or may not work on your computer **
+A PyTorch-native CUDA library for computing the proximal operator of isotropic Total Variation on 2D images.
 
-`ftvp` is a CUDA library dedicated to the computation of the proximal operator
-of the isotropic Total Variation in 2D and 3D on Nvidia GPU. This repository
-includes examples of use in C, along with bindings for Python. It is licensed
-under the New BSD licence, see LICENSE file.
+## Installation
 
-* Issues: [GitHub Issues](https://github.com/svaiter/ftvp/issues)
+```bash
+pip install .
+```
 
-Status
-------
-`ftvp` is currently under active development, and the API is susceptible to
-change at any time. At the moment, the following features are available:
+Requires:
+- Python >= 3.10
+- PyTorch >= 2.0 with CUDA support
+- CUDA toolkit (for JIT compilation)
 
-- 2D (exact/smoothed)-isotropic TV with different optimization schemes (Newton
-  descent, Gradient descent, primal-dual scheme) in B/W or color.
-- fast CPU implementation in a single file.
-- Performs on float arrays only.
-- Python 3 bindings available.
+## Quick Start
 
-Basic use
----------
-The library is at the moment splitted in two part `libftvp` for B/W images and
-`libftvp-color` for color images.
+```python
+import torch
+from ftvp import proxtv
 
-For the sake of conciseness, we exemplify the use of the library for the B/W
-version only. If `u` is float array of size `nxm`, the call to
+# Grayscale image
+img = torch.randn(256, 256, device="cuda")
+denoised = proxtv(img, lam=0.1)
 
-    prox_tv(n, m, 1, u, lambda, 100, 16, 2, 1, 0.25, OE_SPLIT_NEWTON, 0);
-    
-will compute the TV regularization of `u` *in place* with regularization
-parameter `lambda`, for 100 global iterations, with GPU blocks of size 16, with
-2 inner iterations, testing the gap each iterations, stopping when the gap
-factor is less than 0.25, where the inner iteration are given by a Newton scheme
-and with standard over-relaxation parameter.
+# Color image (C, H, W)
+img_color = torch.randn(3, 256, 256, device="cuda")
+denoised_color = proxtv(img_color, lam=0.1)
 
-If one wants to perform the smoothed (Huber-like) TV regularization with the
-same parameter, the following call should be used:
+# Batched images (B, C, H, W)
+batch = torch.randn(8, 3, 256, 256, device="cuda")
+denoised_batch = proxtv(batch, lam=0.1)
+```
 
-    prox_tv(n, m, 1, u, lambda, epsilon 100, 16, 2, 1, 0.25, OE_SPLIT_NEWTON, 0);
+## API
 
-A more low-level call is possible in order to control the memory on GPU if
-necessary, for instance using `prox_tv` as a inner iteration in a first-order
-method for inverse problems. We refer to `init_memory` and
-`prox_tv_eps_2d_noalloc` for more information.
+```python
+proxtv(img, lam, *, epsilon=1e-3, max_iter=100, inner_steps=5, gap_iter=1, gap_tol=1e-4, use_newton=True)
+```
 
-On contrary, for the standard user, the number of parameter can be overwhelming.
-In this case, we refer the user to the python 3 binding where a similar call is
-done by executing
+Computes:
+```
+prox_{λ·TV}(img) = argmin_x  0.5 * ||x - img||² + λ * TV(x)
+```
 
-    prox_tv(u, lambda, epsilon=epsilon)
-    
-Please see the `examples` directory for more examples.
+**Parameters:**
+- `img`: Input tensor (2D, 3D, or 4D). Must be on CUDA. Dimensions must be even.
+- `lam`: Regularization parameter. Higher = smoother.
+- `epsilon`: Smoothing for Huber-like TV (default: 1e-3)
+- `max_iter`: Maximum iterations (default: 100)
+- `inner_steps`: Inner descent steps (default: 5)
+- `gap_iter`: Gap check frequency (default: 1)
+- `gap_tol`: RMSE tolerance (default: 1e-4)
+- `use_newton`: Use Newton method for grayscale (default: True)
 
-Build instructions
-------------------
-You will need [CUDA tools](https://developer.nvidia.com/cuda-toolkit) >= 5.5
-installed to compile this library. On most systems you can build the library
-using the following commands
+**Returns:** Denoised tensor with same shape/dtype.
 
-    $ cd ftvp
-    $ make
-    
-To install the library you can use the following command with the appropriate
-permissions
+## Algorithm
 
-    $ make install
+This implements the accelerated block coordinate descent method with even/odd square decomposition. The algorithm is based on:
 
-`ftvp` has been successfully tested on a Jetson TK1 Embedded Development Kit
-(NVIDIA Tegra K1) on Linux 3.10.24 with CUDA 6.0.1, and on a Amazon EC2
-g2.2xlarge instance on Linux Ubuntu Server 14.04 LTS with CUDA 6.5. Please
-report any issues with your configuration on the
-[GitHub Issues](https://github.com/svaiter/ftvp/issues) page.
+1. **Chambolle, A., & Pock, T. (2015)**. A remark on accelerated block coordinate descent for computing the proximity operators of a sum of convex functions. *SMAI Journal of Computational Mathematics*, 1, 29-54.
 
-References
-----------
-If you use this library for academic work, please cite the following paper
-and/or preprint
+2. **Chambolle, A., Tan, P., & Vaiter, S. (2017)**. Accelerated alternating descent methods for Dykstra-like problems. *J. Math. Imaging Vision*, 59(3), 48-97.
 
-[1] Chambolle, A., & Pock, T. (2015). A remark on accelerated block coordinate
-descent for computing the proximity operators of a sum of convex functions. SMAI
-Journal of Computational Mathematics, 1, 29-54.
+## License
 
-[2] Chambolle, A., Tan, P., & Vaiter S. (2016). Accelerated Alternating Descent
-Methods for Dykstra-like problems. arXiV preprint.
+BSD-3-Clause
