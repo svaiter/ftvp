@@ -29,9 +29,15 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+examples = [
+    "numpy",
+    "pillow",
+]
 dev = [
     "pytest>=7.0",
     "matplotlib>=3.5",
+    "numpy",
+    "pillow",
 ]
 
 [project.urls]
